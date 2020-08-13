@@ -1,6 +1,5 @@
 #include <iostream>
 #include <conio.h>
-#include <stdlib.h>
 
 static const int BOARD_WIDTH = 8;
 static const int BOARD_HEIGHT = 8;
@@ -41,28 +40,27 @@ int directions[][2] =
     {0, 1},
     {1, 1},
     {1, 0},
-    {1, -1},
+    {1, -1}
 };
 
-int cells[BOARD_HEIGHT][BOARD_WIDTH];
+int cells[BOARD_WIDTH][BOARD_HEIGHT];
 
 int cursorX;
 int cursorY;
 
 int turn;
 
-void display();
-bool checkCanPut(int argColor, int argCursorX, int argCursorY, bool turnOver);
+bool checkCanPut(int argColor, int argX, int argY, bool turnOver);
 bool checkCanPutAll(int argColor);
+void display();
 
 int main()
 {
-    // initialize
     for (int y = 0; y < BOARD_HEIGHT; ++y)
     {
         for (int x = 0; x < BOARD_WIDTH; ++x)
         {
-            cells[y][x] = COLOR_NONE;
+            cells[x][y] = COLOR_NONE;
         }
     }
 
@@ -73,16 +71,15 @@ int main()
 
     bool canPut = true;
 
-    while (1)
+    while (true)
     {
         display();
 
+        std::cout << "turn:" <<colorNames[turn] << std::endl;
         if (!canPut)
         {
-            std::cout << "Can't put!!" << std::endl;
+            std::cout << "Can't put!" << std::endl;
         }
-
-        std::cout << "turn : " << colorNames[turn] << std::endl;
 
         canPut = true;
 
@@ -103,15 +100,14 @@ int main()
         default:
             if (checkCanPut(turn, cursorX, cursorY, false))
             {
-                // turn over stone before do selected point
                 checkCanPut(turn, cursorX, cursorY, true);
-                cells[cursorY][cursorX] = turn;
-                turn = !turn;
+                cells[cursorX][cursorY] = turn;
+                turn ^= 1;
 
                 if (!checkCanPutAll(turn))
                 {
-                    std::cout << "Pass!" << std::endl;
-                    turn = !turn;
+                    std::cout << "Pass:" << colorNames[turn] << std::endl;
+                    turn ^= 1;
                 }
             }
             else
@@ -124,133 +120,94 @@ int main()
         if ((!checkCanPutAll(COLOR_BLACK)) && (!checkCanPutAll(COLOR_WHITE)))
         {
             int count[COLOR_MAX] = {};
-
             for (int y = 0; y < BOARD_HEIGHT; ++y)
             {
                 for (int x = 0; x < BOARD_WIDTH; ++x)
                 {
-                    if (COLOR_NONE != cells[y][x])
+                    if (COLOR_NONE != cells[x][y])
                     {
-                        ++count[cells[y][x]];
+                        ++count[cells[x][y]];
                     }
-
                 }
             }
 
             display();
-
-            for (int i = 0; i < COLOR_MAX; ++ i)
+            std::cout << "Game Set!" << std::endl;
+            for (int i = 0; i < COLOR_MAX; ++i)
             {
                 std::cout << colorNames[i] << ":" << count[i] << std::endl;
             }
 
-            if (count[COLOR_BLACK] == count[COLOR_WHITE])
+            if (count[COLOR_BLACK] > count[COLOR_WHITE])
             {
-                std::cout << "Draw!" << std::endl;
+                std::cout << colorNames[COLOR_BLACK] << ":Won!" << std::endl;
             }
-            else if (count[COLOR_BLACK] > count[COLOR_WHITE])
+            else if (count[COLOR_BLACK] < count[COLOR_WHITE])
             {
-                std::cout << "Winner:" << colorNames[COLOR_BLACK]<< std::endl;
+                std::cout << colorNames[COLOR_WHITE] << ":Won!" << std::endl;
             }
             else
             {
-                std::cout << "Winner:" << colorNames[COLOR_WHITE] << std::endl;
+                std::cout << "Draw!" << std::endl;
             }
-
+            _getch();
             break;
         }
     }
     return 0;
 }
 
-void display()
+bool checkCanPut(int argColor, int argX, int argY, bool turnOver)
 {
-    system("cls");
-    for (int y = 0; y < BOARD_HEIGHT; ++y)
-    {
-        for (int x = 0; x < BOARD_WIDTH; ++x)
-        {
-            if (cursorX == x && cursorY == y)
-            {
-                std::cout << "";
-            }
-            else
-            {
-                switch (cells[y][x])
-                {
-                case COLOR_NONE:
-                    std::cout << "E";
-                    break;
-                case COLOR_BLACK:
-                    std::cout << "›";
-                    break;
-                case COLOR_WHITE:
-                    std::cout << "œ";
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
-        std::cout << std::endl;
-    }
-}
-
-bool checkCanPut(int argColor, int argCursorX, int argCursorY, bool argTurnOver)
-{
-    if (COLOR_NONE != cells[argCursorY][argCursorX])
+    if (COLOR_NONE != cells[argX][argY])
     {
         return false;
     }
 
     for (int i = 0; i < DIRECTION_MAX; ++i)
     {
-        int x = argCursorX;
-        int y = argCursorY;
-
+        int x = argX;
+        int y = argY;
         x += directions[i][0];
         y += directions[i][1];
-
-        if((!argColor) != cells[y][x])
+        if ((argColor ^ 1) != cells[x][y])
         {
             continue;
         }
 
-        while (1)
+        while (true)
         {
             x += directions[i][0];
             y += directions[i][1];
-
-            if (x < 0 || x >= BOARD_WIDTH || y < 0 || y > BOARD_HEIGHT)
+            if ((x < 0) || (x >= BOARD_WIDTH) || (y < 0) || (y >= BOARD_HEIGHT))
             {
                 break;
             }
-            if (COLOR_NONE == cells[y][x])
+            if (COLOR_NONE == cells[x][y])
             {
                 break;
             }
-            if (argColor == cells[y][x])
+            if (argColor == cells[x][y])
             {
-                if (!argTurnOver)
+                if (false == turnOver)
                 {
                     return true;
                 }
 
-                int turnOverX = argCursorX;
-                int turnOverY = argCursorY;
-
-                while (1)
+                int turnOverX = argX;
+                int turnOverY = argY;
+                while (true)
                 {
-                    cells[turnOverY][turnOverX] = argColor;
-
+                    cells[turnOverX][turnOverY] = argColor;
                     turnOverX += directions[i][0];
                     turnOverY += directions[i][1];
 
-                    if (x == turnOverX && y == turnOverY)
+                    if ((x == turnOverX) && (y == turnOverY))
                     {
                         break;
                     }
                 }
+                break;
             }
         }
     }
@@ -270,6 +227,36 @@ bool checkCanPutAll(int argColor)
             }
         }
     }
-
     return false;
+}
+
+void display()
+{
+    system("cls");
+    for (int y = 0; y < BOARD_HEIGHT; ++y)
+    {
+        for (int x = 0; x < BOARD_WIDTH; ++x)
+        {
+            if ((cursorX == x) && (cursorY == y))
+            {
+                std::cout << "";
+            }
+            else
+            {
+                switch (cells[x][y])
+                {
+                case COLOR_BLACK:
+                    std::cout << "Z";
+                    break;
+                case COLOR_WHITE:
+                    std::cout << "œ";
+                    break;
+                case COLOR_NONE:
+                    std::cout << "E";
+                    break;
+                }
+            }
+        }
+        std::cout << std::endl;
+    }
 }
